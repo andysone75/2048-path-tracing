@@ -10,6 +10,7 @@ void framebufferResizeCallback(GLFWwindow* window, int width, int height) {
 void Application::run() {
     initWindow();
     initVulkan();
+    initGame();
     mainLoop();
     cleanup();
 }
@@ -28,6 +29,16 @@ void Application::initVulkan() {
     vulkan.init();
 }
 
+void Application::initGame() {
+    game.init(10);
+    view.init(&game, &scene);
+
+    resources.initialize(vulkan);
+    scene.initialize(&resources);
+    game.reset();
+    view.updateBoardFast();
+}
+
 void Application::mainLoop() {
     while (!glfwWindowShouldClose(window)) {
         float time = static_cast<float>(glfwGetTime());
@@ -40,7 +51,16 @@ void Application::mainLoop() {
         }
 
         glfwPollEvents();
-        vulkan.render();
+        
+        std::vector<std::pair<Model, glm::vec3>> objects;
+        for (const int objectId : scene.getOpaqueObjects()) {
+            SceneObject& object = scene.getObject(objectId);
+            if (object.isActive) {
+                objects.push_back(std::make_pair(object.model, object.position));
+            }
+        }
+        
+        vulkan.render(objects);
     }
 }
 

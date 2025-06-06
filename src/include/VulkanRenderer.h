@@ -1,5 +1,7 @@
 #pragma once
 
+#include "Engine.h"
+
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
 
@@ -11,11 +13,14 @@ public:
 
 	void setup(GLFWwindow* window);
 	void init();
-	void render();
+	void render(const std::vector<std::pair<Model, glm::vec3>>& objects);
 	void cleanup();
+
+	Mesh genCube(Color color = { 255,255, 255, 255 });
 
 private:
 	const int MAX_FRAMES_IN_FLIGHT = 2;
+	const int MAX_MODELS = 64;
 
 	GLFWwindow* window;
 	VkInstance instance;
@@ -41,15 +46,12 @@ private:
 	VkDescriptorSetLayout descriptorSetLayout;
 	VkPipelineLayout pipelineLayout;
 	VkPipeline graphicsPipeline;
-	VkBuffer vertexBuffer;
-	VkDeviceMemory vertexBufferMemory;
-	VkBuffer indexBuffer;
-	VkDeviceMemory indexBufferMemory;
-	std::vector<VkBuffer> uniformBuffers;
-	std::vector<VkDeviceMemory> uniformBuffersMemory;
-	std::vector<void*> uniformBuffersMapped;
+
 	VkDescriptorPool descriptorPool;
-	std::vector<VkDescriptorSet> descriptorSets;
+	std::vector<std::vector<VkBuffer>> uniformBuffers;
+	std::vector<std::vector<VkDeviceMemory>> uniformBuffersMemory;
+	std::vector<std::vector<void*>> uniformBuffersMapped;
+	std::vector<std::vector<VkDescriptorSet>> descriptorSets;
 
 	void createInstance();
 	void setupDebugMessenger();
@@ -65,14 +67,12 @@ private:
 	void createSyncObjects();
 	void createDescriptorSetLayout();
 	void createGraphicsPipeline();
-	void createVertexBuffer();
-	void createIndexBuffer();
-	void createUniformBuffers();
 	void createDescriptorPool();
+	void createUniformBuffers();
 	void createDescriptorSets();
 
-	void updateUniformBuffer(uint32_t currentImage);
-	void recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex);
+	void updateUniformBuffer(uint32_t currentImage, const std::vector<std::pair<Model, glm::vec3>>& objects);
+	void recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex, const std::vector<std::pair<Model, glm::vec3>>& objects);
 	void recreateSwapChain();
 	void cleanupSwapChain();
 	VkShaderModule createShaderModule(const std::vector<char>& code);

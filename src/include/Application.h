@@ -1,6 +1,10 @@
 #pragma once
 
 #include "VulkanRenderer.h"
+#include "Game2048.h"
+#include "View2048.h"
+#include "Scene.h"
+#include "Resources.h"
 
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
@@ -10,6 +14,7 @@ public:
 	void run();
     void initWindow();
     void initVulkan();
+    void initGame();
     void mainLoop();
     void cleanup();
 
@@ -24,4 +29,8 @@ private:
 
     GLFWwindow* window;
     VulkanRenderer vulkan;
+    Game2048 game;
+    Resources resources;
+    Scene scene;
+    View2048 view;
 };
