@@ -10,7 +10,6 @@ const float ANIMATION_TIME = .25f;
 
 struct View2048_Cube {
     int* cubeIds;
-    //int labelId;
     int level;
 };
 

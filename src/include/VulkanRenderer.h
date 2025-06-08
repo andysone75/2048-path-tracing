@@ -13,7 +13,7 @@ public:
 
 	void setup(GLFWwindow* window);
 	void init();
-	void render(const std::vector<std::pair<Model, glm::vec3>>& objects);
+	void render(const std::vector<std::pair<Model, glm::vec3>>& objects, const Camera& camera);
 	void cleanup();
 
 	Mesh genCube(Color color = { 255,255, 255, 255 });
@@ -71,7 +71,7 @@ private:
 	void createUniformBuffers();
 	void createDescriptorSets();
 
-	void updateUniformBuffer(uint32_t currentImage, const std::vector<std::pair<Model, glm::vec3>>& objects);
+	void updateUniformBuffer(uint32_t currentImage, const std::vector<std::pair<Model, glm::vec3>>& objects, const Camera& camera);
 	void recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex, const std::vector<std::pair<Model, glm::vec3>>& objects);
 	void recreateSwapChain();
 	void cleanupSwapChain();

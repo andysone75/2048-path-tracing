@@ -40,8 +40,6 @@ void View2048::update(float dt) {
         for (int i = 0; i < cubesCount; i++) {
             scene->getObject(target.cubeIds[i]).position = glm::vec3(pos.x, .2f * i, pos.z);
         }
-        
-        //scene.getObject(target.labelId).position = pos + glm::vec3(0, .2f * (target.level + 1), 0);
     }
 }
 
@@ -144,35 +142,6 @@ ModelType getCubeModelByLevel(int level) {
     throw std::runtime_error("Model not found");
 }
 
-//ModelType getLabelModelByLevel(int level) {
-//    switch (level) {
-//    case 0:
-//        return ModelType::Text_2;
-//    case 1:
-//        return ModelType::Text_4;
-//    case 2:
-//        return ModelType::Text_8;
-//    case 3:
-//        return ModelType::Text_16;
-//    case 4:
-//        return ModelType::Text_32;
-//    case 5:
-//        return ModelType::Text_64;
-//    case 6:
-//        return ModelType::Text_128;
-//    case 7:
-//        return ModelType::Text_256;
-//    case 8:
-//        return ModelType::Text_512;
-//    case 9:
-//        return ModelType::Text_1024;
-//    case 10:
-//        return ModelType::Text_2048;
-//    }
-//
-//    throw std::runtime_error("Model not found");
-//}
-
 View2048_Object View2048::placeObject(int level, int row, int col) {
     View2048_Object object;
     bool poolHit = false;
@@ -199,7 +168,6 @@ View2048_Object View2048::placeObject(int level, int row, int col) {
             object.cube.cubeIds[0] = scene->createObjectOpaque(getCubeModelByLevel(10));
         }
 
-        //object.cube.labelId = scene.createObjectTransparent(getLabelModelByLevel(level));
         object.cube.level = level;
     }
 
@@ -210,11 +178,6 @@ View2048_Object View2048::placeObject(int level, int row, int col) {
         sceneObjectCube.position = { row * 1.05f, .2f * i, col * 1.05f };
         sceneObjectCube.isActive = true;
     }
-
-    //SceneObject& sceneObjectLabel = scene.getObject(object.cube.labelId);
-    //sceneObjectLabel.position = { row * 1.05f, .2f * (level + 1), col * 1.05f};
-    //sceneObjectLabel.isActive = true;
-    //sceneObjectLabel.isActive = false; // Temporary disable labels
 
     object.row = row;
     object.col = col;

@@ -387,7 +387,7 @@ void VulkanRenderer::init() {
 	createDescriptorSets();
 }
 
-void VulkanRenderer::render(const std::vector<std::pair<Model, glm::vec3>>& objects) {
+void VulkanRenderer::render(const std::vector<std::pair<Model, glm::vec3>>& objects, const Camera& camera) {
 	vkWaitForFences(device, 1, &inFlightFences[currentFrame], VK_TRUE, UINT64_MAX);
 
 	uint32_t imageIndex;
@@ -404,7 +404,7 @@ void VulkanRenderer::render(const std::vector<std::pair<Model, glm::vec3>>& obje
 	vkResetFences(device, 1, &inFlightFences[currentFrame]);
 	vkResetCommandBuffer(commandBuffers[currentFrame], 0);
 
-	updateUniformBuffer(currentFrame, objects);
+	updateUniformBuffer(currentFrame, objects, camera);
 	recordCommandBuffer(commandBuffers[currentFrame], imageIndex, objects);
 
 	VkSubmitInfo submitInfo{};
@@ -575,12 +575,12 @@ Mesh VulkanRenderer::genCube(Color color) {
 	return mesh;
 }
 
-void VulkanRenderer::updateUniformBuffer(uint32_t currentImage, const std::vector<std::pair<Model, glm::vec3>>& objects) {
+void VulkanRenderer::updateUniformBuffer(uint32_t currentImage, const std::vector<std::pair<Model, glm::vec3>>& objects, const Camera& camera) {
 	for (size_t i = 0; i < objects.size(); i++) {
 		UniformBufferObject ubo{};
 		ubo.model = glm::translate(objects[i].first.transform, objects[i].second);
-		ubo.view = glm::lookAt(glm::vec3(5.0f, 5.0f, 5.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
-		ubo.proj = glm::perspective(glm::radians(45.0f), swapChainExtent.width / (float)swapChainExtent.height, 0.1f, 10.0f);
+		ubo.view = camera.getViewMatrix();
+		ubo.proj = camera.getProjectionMatrixOrtho();
 		ubo.proj[1][1] *= -1;
 
 		memcpy(uniformBuffersMapped[currentImage][i], &ubo, sizeof(ubo));
