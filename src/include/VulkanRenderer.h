@@ -34,6 +34,10 @@ private:
 	std::vector<VkImage> swapChainImages;
 	VkFormat swapChainImageFormat;
 	VkExtent2D swapChainExtent;
+	VkFormat depthFormat;
+	std::vector<VkImage> depthImages;
+	std::vector<VkDeviceMemory> depthImagesMemory;
+	std::vector<VkImageView> depthImagesViews;
 	VkRenderPass renderPass;
 	std::vector<VkImageView> swapChainImageViews;
 	std::vector<VkFramebuffer> swapChainFramebuffers;
@@ -59,6 +63,7 @@ private:
 	void pickPhysicalDevice();
 	void createLogicalDevice();
 	void createSwapChain();
+	void createDepthBuffers();
 	void createRenderPass();
 	void createImageViews();
 	void createFramebuffers();

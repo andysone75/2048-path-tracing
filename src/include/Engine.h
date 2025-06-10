@@ -46,11 +46,11 @@ struct Mesh {
 //};
 
 struct Model {
-	Mesh mesh;
-	//Shader shader;
+    std::string name;
+    Mesh mesh;
 	glm::mat4 transform;
 
-	static Model Load(const Mesh& mesh);
+	static Model Load(const Mesh& mesh, std::string name);
 };
 
 struct Camera {

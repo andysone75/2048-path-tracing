@@ -8,13 +8,12 @@
 
 Model loadModel(
 	Mesh mesh, 
-	//Shader shader, 
+	std::string name,
 	glm::mat4 scaleMatrix = glm::mat4(1),
 	glm::mat4 translateMatrix = glm::mat4(1)
 ) {
-	Model model = Model::Load(mesh);
+	Model model = Model::Load(mesh, name);
 	model.transform = translateMatrix * scaleMatrix;
-	//model.shader = shader;
 	return model;
 }
 
@@ -32,7 +31,6 @@ inline int getShaderIndex(LitShaderType shaderType) { return static_cast<int>(sh
 #define MATRIX_TRANSLATE(x, y, z) glm::translate(glm::mat4(1), glm::vec3(x, y, z))
 
 void Resources::initialize(VulkanRenderer& vulkan) {
-	// Lit Shaders
 	Color white = WHITE;
 	Color gray		 = Color{ 186, 202, 211, 255 };
 	Color lightGreen = Color{ 146, 255, 124, 255 };
@@ -45,38 +43,19 @@ void Resources::initialize(VulkanRenderer& vulkan) {
 	Color orange	 = Color{ 255, 159, 124, 255 };
 	Color yellow	 = Color{ 255, 238, 124, 255 };
 
-	//Shader shaderLit = Shader::Load(
-	//	"shaders/lit-vs.glsl",
-	//	"shaders/lit-fs.glsl",
-	//	{}
-	//);
-
-	//Shader shaderGradient = Shader::Load(
-	//	"shaders/gradient-vert.glsl",
-	//	"shaders/gradient-frag.glsl",
-	//	{}
-	//);
-
-	//litShaders[getShaderIndex(LitShaderType::Color)] = shaderLit;
-	//litShaders[getShaderIndex(LitShaderType::Gradient)] = shaderGradient;
-
-	//shaderGradient.use();
-	//shaderGradient.setUniformVec3("color0", colorToVector3(darkBlue));
-	//shaderGradient.setUniformVec3("color1", colorToVector3(purple));
-
 	// Models
-	Model gridCell = loadModel(vulkan.genCube(white),	MATRIX_SCALE(1, .3, 1), MATRIX_TRANSLATE(0, 0, 0));
-	Model level0  = loadModel(vulkan.genCube(gray),		MATRIX_SCALE(.7, .7 * .2, .7), MATRIX_TRANSLATE(0, .7 * .2 * .5, 0));
-	Model level1  = loadModel(vulkan.genCube(lightGreen), MATRIX_SCALE(.7, .7 * .2, .7), MATRIX_TRANSLATE(0, .7 * .2 * .5, 0));
-	Model level2  = loadModel(vulkan.genCube(darkGreen), MATRIX_SCALE(.7, .7 * .2, .7), MATRIX_TRANSLATE(0, .7 * .2 * .5, 0));
-	Model level3  = loadModel(vulkan.genCube(blue),		MATRIX_SCALE(.7, .7 * .2, .7), MATRIX_TRANSLATE(0, .7 * .2 * .5, 0));
-	Model level4  = loadModel(vulkan.genCube(darkBlue),	MATRIX_SCALE(.7, .7 * .2, .7), MATRIX_TRANSLATE(0, .7 * .2 * .5, 0));
-	Model level5  = loadModel(vulkan.genCube(purple),	MATRIX_SCALE(.7, .7 * .2, .7), MATRIX_TRANSLATE(0, .7 * .2 * .5, 0));
-	Model level6  = loadModel(vulkan.genCube(pink),		MATRIX_SCALE(.7, .7 * .2, .7), MATRIX_TRANSLATE(0, .7 * .2 * .5, 0));
-	Model level7  = loadModel(vulkan.genCube(red),		MATRIX_SCALE(.7, .7 * .2, .7), MATRIX_TRANSLATE(0, .7 * .2 * .5, 0));
-	Model level8  = loadModel(vulkan.genCube(orange),	MATRIX_SCALE(.7, .7 * .2, .7), MATRIX_TRANSLATE(0, .7 * .2 * .5, 0));
-	Model level9  = loadModel(vulkan.genCube(yellow),	MATRIX_SCALE(.7, .7 * .2, .7), MATRIX_TRANSLATE(0, .7 * .2 * .5, 0));
-	Model level10 = loadModel(vulkan.genCube(),			MATRIX_SCALE(.7, .19 * 11, .7), MATRIX_TRANSLATE(0, .19 * 11 * .5, 0));
+	Model gridCell = loadModel(vulkan.genCube(white),		"grid cell",	MATRIX_SCALE(1, .3, 1),			MATRIX_TRANSLATE(0, 0, 0));
+	Model level0  = loadModel(vulkan.genCube(gray),			"level-0",		MATRIX_SCALE(.7, .7 * .2, .7),	MATRIX_TRANSLATE(0, .7 * .2 * .5, 0));
+	Model level1  = loadModel(vulkan.genCube(lightGreen),	"level-1",		MATRIX_SCALE(.7, .7 * .2, .7),	MATRIX_TRANSLATE(0, .7 * .2 * .5, 0));
+	Model level2  = loadModel(vulkan.genCube(darkGreen),	"level-2",		MATRIX_SCALE(.7, .7 * .2, .7),	MATRIX_TRANSLATE(0, .7 * .2 * .5, 0));
+	Model level3  = loadModel(vulkan.genCube(blue),			"level-3",		MATRIX_SCALE(.7, .7 * .2, .7),	MATRIX_TRANSLATE(0, .7 * .2 * .5, 0));
+	Model level4  = loadModel(vulkan.genCube(darkBlue),		"level-4",		MATRIX_SCALE(.7, .7 * .2, .7),	MATRIX_TRANSLATE(0, .7 * .2 * .5, 0));
+	Model level5  = loadModel(vulkan.genCube(purple),		"level-5",		MATRIX_SCALE(.7, .7 * .2, .7),	MATRIX_TRANSLATE(0, .7 * .2 * .5, 0));
+	Model level6  = loadModel(vulkan.genCube(pink),			"level-6",		MATRIX_SCALE(.7, .7 * .2, .7),	MATRIX_TRANSLATE(0, .7 * .2 * .5, 0));
+	Model level7  = loadModel(vulkan.genCube(red),			"level-7",		MATRIX_SCALE(.7, .7 * .2, .7),	MATRIX_TRANSLATE(0, .7 * .2 * .5, 0));
+	Model level8  = loadModel(vulkan.genCube(orange),		"level-8",		MATRIX_SCALE(.7, .7 * .2, .7),	MATRIX_TRANSLATE(0, .7 * .2 * .5, 0));
+	Model level9  = loadModel(vulkan.genCube(yellow),		"level-9",		MATRIX_SCALE(.7, .7 * .2, .7),	MATRIX_TRANSLATE(0, .7 * .2 * .5, 0));
+	Model level10 = loadModel(vulkan.genCube(),				"level-10",		MATRIX_SCALE(.7, .19 * 11, .7), MATRIX_TRANSLATE(0, .19 * 11 * .5, 0));
 
 	models[0] = gridCell;
 	models[1] = level0;

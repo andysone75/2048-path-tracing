@@ -80,71 +80,9 @@ void Mesh::GenCube(std::vector<float>& vertices, std::vector<uint16_t>& indices,
     memcpy(uvs.data(), uv, sizeof(uv));
 }
 
-//Mesh GenPlane(float width, float height, int slices) {
-//    int vertexCount = (slices + 1) * (slices + 1);
-//    int indexCount = slices * slices * 6;
-//
-//    std::vector<glm::vec3> vertices(vertexCount);
-//    std::vector<GLuint> indices(indexCount);
-//
-//    float halfWidth = width * 0.5f;
-//    float halfHeight = height * 0.5f;
-//    float step = width / slices;
-//
-//    int vertexIndex = 0;
-//    for (int z = 0; z <= slices; ++z) {
-//        for (int x = 0; x <= slices; ++x) {
-//            float xPos = -halfWidth + x * step;
-//            float zPos = -halfHeight + z * step;
-//            vertices[vertexIndex++] = glm::vec3(xPos, 0.0f, zPos);
-//        }
-//    }
-//
-//    int indexIndex = 0;
-//    for (int z = 0; z < slices; ++z) {
-//        for (int x = 0; x < slices; ++x) {
-//            int topLeft = z * (slices + 1) + x;
-//            int topRight = z * (slices + 1) + (x + 1);
-//            int bottomLeft = (z + 1) * (slices + 1) + x;
-//            int bottomRight = (z + 1) * (slices + 1) + (x + 1);
-//
-//            indices[indexIndex++] = topLeft;
-//            indices[indexIndex++] = bottomLeft;
-//            indices[indexIndex++] = topRight;
-//
-//            indices[indexIndex++] = topRight;
-//            indices[indexIndex++] = bottomLeft;
-//            indices[indexIndex++] = bottomRight;
-//        }
-//    }
-//
-//    Mesh mesh;
-//    mesh.vao = VAO;
-//    mesh.vertexCount = vertexCount;
-//
-//    return mesh;
-//}
-
-//Mesh Mesh::GenFullscreenQuad() {
-//    float quadVertices[] = {
-//        // positions   // texCoords
-//        -1.0f,  1.0f,  0.0f, 1.0f,
-//        -1.0f, -1.0f,  0.0f, 0.0f,
-//         1.0f, -1.0f,  1.0f, 0.0f,
-//
-//        -1.0f,  1.0f,  0.0f, 1.0f,
-//         1.0f, -1.0f,  1.0f, 0.0f,
-//         1.0f,  1.0f,  1.0f, 1.0f
-//    };
-//
-//    Mesh mesh;
-//    mesh.vao = quadVAO;
-//    mesh.vertexCount = 6;
-//    return mesh;
-//}
-
-Model Model::Load(const Mesh& mesh) {
+Model Model::Load(const Mesh& mesh, std::string name) {
     Model model;
     model.mesh = mesh;
+    model.name = name;
     return model;
 }
