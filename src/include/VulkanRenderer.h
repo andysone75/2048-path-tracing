@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Engine.h"
+#include "SceneObject.h"
 
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
@@ -9,6 +9,7 @@
 
 struct CubeData {
 	alignas(16) glm::mat4 model;
+	alignas(16) glm::vec4 color;
 };
 
 class VulkanRenderer {
@@ -17,7 +18,7 @@ public:
 
 	void setup(GLFWwindow* window);
 	void init();
-	void render(const std::vector<std::pair<Model, glm::vec3>>& objects, const Camera& camera);
+	void render(const std::vector<SceneObject>& objects, const Camera& camera);
 	void cleanup();
 
 	Mesh genCube(Color color = { 255,255, 255, 255 });
@@ -91,8 +92,8 @@ private:
 	void createDescriptorSets();
 	void createCubesBuffers();
 
-	void updateUniformBuffer(uint32_t currentImage, const std::vector<std::pair<Model, glm::vec3>>& objects, const Camera& camera);
-	void recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex, const std::vector<std::pair<Model, glm::vec3>>& objects);
+	void updateUniformBuffer(uint32_t currentImage, const std::vector<SceneObject>& objects, const Camera& camera);
+	void recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex, const std::vector<SceneObject>& objects);
 	void recreateSwapChain();
 	void cleanupSwapChain();
 	VkShaderModule createShaderModule(const std::vector<char>& code);

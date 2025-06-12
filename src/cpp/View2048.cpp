@@ -142,6 +142,44 @@ ModelType getCubeModelByLevel(int level) {
     throw std::runtime_error("Model not found");
 }
 
+glm::vec4 getCubeColorByLevel(int level) {
+    glm::vec4 gray = glm::vec4{ 186, 202, 211, 255 } / 255.0f;
+    glm::vec4 lightGreen = glm::vec4{ 146, 255, 124, 255 } / 255.0f;
+    glm::vec4 darkGreen = glm::vec4{ 5,   181, 119, 255 } / 255.0f;
+    glm::vec4 blue = glm::vec4{ 10,  226, 255, 255 } / 255.0f;
+    glm::vec4 darkBlue = glm::vec4{ 42,  120, 255, 255 } / 255.0f;
+    glm::vec4 purple = glm::vec4{ 202, 103, 255, 255 } / 255.0f;
+    glm::vec4 pink = glm::vec4{ 158, 51,  216, 255 } / 255.0f;
+    glm::vec4 red = glm::vec4{ 255, 110, 112, 255 } / 255.0f;
+    glm::vec4 orange = glm::vec4{ 255, 159, 124, 255 } / 255.0f;
+    glm::vec4 yellow = glm::vec4{ 255, 238, 124, 255 } / 255.0f;
+
+    switch (level) {
+    case 0:
+        return gray;
+    case 1:
+        return lightGreen;
+    case 2:
+        return darkGreen;
+    case 3:
+        return blue;
+    case 4:
+        return darkBlue;
+    case 5:
+        return purple;
+    case 6:
+        return pink;
+    case 7:
+        return red;
+    case 8:
+        return orange;
+    case 9:
+        return yellow;
+    }
+
+    throw std::runtime_error("Model not found");
+}
+
 View2048_Object View2048::placeObject(int level, int row, int col) {
     View2048_Object object;
     bool poolHit = false;
@@ -157,15 +195,15 @@ View2048_Object View2048::placeObject(int level, int row, int col) {
     }
 
     if (!poolHit) {
-        if (level < 10) {
+        if (level < 9) {
             object.cube.cubeIds = new int[level + 1];
 
             for (int i = 0; i < level + 1; i++) {
-                object.cube.cubeIds[i] = scene->createObjectOpaque(getCubeModelByLevel(i));
+                object.cube.cubeIds[i] = scene->createObjectOpaque(getCubeModelByLevel(i), getCubeColorByLevel(i));
             }
         } else {
             object.cube.cubeIds = new int[1];
-            object.cube.cubeIds[0] = scene->createObjectOpaque(getCubeModelByLevel(10));
+            object.cube.cubeIds[0] = scene->createObjectOpaque(getCubeModelByLevel(9), getCubeColorByLevel(9));
         }
 
         object.cube.level = level;

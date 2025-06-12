@@ -74,11 +74,11 @@ void Application::mainLoop() {
 
         glfwPollEvents();
         
-        std::vector<std::pair<Model, glm::vec3>> objects;
+        std::vector<SceneObject> objects;
         for (const int objectId : scene.getOpaqueObjects()) {
             SceneObject& object = scene.getObject(objectId);
             if (object.isActive) {
-                objects.push_back(std::make_pair(object.model, object.position));
+                objects.push_back(object);
             }
         }
 

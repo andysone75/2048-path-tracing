@@ -25,25 +25,7 @@ struct Mesh {
     size_t indexCount;
 
 	static void GenCube(std::vector<float>& vertices, std::vector<uint16_t>& indices, std::vector<float>& normals, std::vector<unsigned char>& colors, std::vector<float>& uvs, Color color = WHITE);
-    //static Mesh GenFullscreenQuad();
 };
-
-//struct Shader {
-//	GLuint id;
-//
-//    static Shader Load(const std::string& vsPath, const std::string& fsPath);
-//    static Shader Load(const std::string& vsPath, const std::string& fsPath, const std::vector<std::string>& attribNames);
-//
-//	inline void use() const { glUseProgram(id); }
-//    inline void unload() const { glDeleteProgram(id); }
-//	
-//	inline void setUniformMatrix(const GLchar* uniformName, const GLfloat* value, int count = 1) const { glUniformMatrix4fv(GET_UNIFORM_LOCATION(id, uniformName), count, GL_FALSE, value); }
-//	inline void setUniform1f(const GLchar* uniformName, float value) const { glUniform1f(GET_UNIFORM_LOCATION(id, uniformName), value); }
-//	inline void setUniform1i(const GLchar* uniformName, int value) const { glUniform1i(GET_UNIFORM_LOCATION(id, uniformName), value); }
-//	inline void setUniformVec2(const GLchar* uniformName, const glm::vec2& value, int count = 1) const { glUniform2fv(GET_UNIFORM_LOCATION(id, uniformName), count, &value[0]); }
-//	inline void setUniformVec3(const GLchar* uniformName, const glm::vec3& value, int count = 1) const {glUniform3fv(GET_UNIFORM_LOCATION(id, uniformName), count, &value[0]); }
-//	inline void setUniformVec4(const GLchar* uniformName, const glm::vec4& value, int count = 1) const {glUniform4fv(GET_UNIFORM_LOCATION(id, uniformName), count, &value[0]); }
-//};
 
 struct Model {
     std::string name;

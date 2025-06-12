@@ -389,7 +389,7 @@ void VulkanRenderer::init() {
 	createDescriptorSets();
 }
 
-void VulkanRenderer::render(const std::vector<std::pair<Model, glm::vec3>>& objects, const Camera& camera) {
+void VulkanRenderer::render(const std::vector<SceneObject>& objects, const Camera& camera) {
 	vkWaitForFences(device, 1, &inFlightFences[currentFrame], VK_TRUE, UINT64_MAX);
 
 	uint32_t imageIndex;
@@ -597,10 +597,10 @@ Mesh VulkanRenderer::genCube(Color color) {
 	return mesh;
 }
 
-void VulkanRenderer::updateUniformBuffer(uint32_t currentImage, const std::vector<std::pair<Model, glm::vec3>>& objects, const Camera& camera) {
+void VulkanRenderer::updateUniformBuffer(uint32_t currentImage, const std::vector<SceneObject>& objects, const Camera& camera) {
 	for (size_t i = 0; i < objects.size(); i++) {
 		UniformBufferObject ubo{};
-		ubo.model = glm::translate(glm::mat4(1), objects[i].second) * objects[i].first.transform;
+		ubo.model = glm::translate(glm::mat4(1), objects[i].position) * objects[i].model.transform;
 		ubo.view = camera.getViewMatrix();
 		ubo.proj = camera.getProjectionMatrixOrtho();
 		ubo.proj[1][1] *= -1;
@@ -609,7 +609,7 @@ void VulkanRenderer::updateUniformBuffer(uint32_t currentImage, const std::vecto
 	}
 }
 
-void VulkanRenderer::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex, const std::vector<std::pair<Model, glm::vec3>>& objects) {
+void VulkanRenderer::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex, const std::vector<SceneObject>& objects) {
 	VkCommandBufferBeginInfo beginInfo{};
 	beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
 	beginInfo.flags = 0;
@@ -652,7 +652,8 @@ void VulkanRenderer::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t
 	vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
 
 	for (size_t i = 0; i < objects.size(); i++) {
-		cubes[i].model = glm::translate(glm::mat4(1), objects[i].second) * objects[i].first.transform;
+		cubes[i].model = glm::translate(glm::mat4(1), objects[i].position) * objects[i].model.transform;
+		cubes[i].color = objects[i].color;
 	}
 
 	if (objects.size() < MAX_MODELS) {
@@ -680,7 +681,7 @@ void VulkanRenderer::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t
 			0, nullptr
 		);
 
-		Model model = objects[i].first;
+		Model model = objects[i].model;
 		VkBuffer vertexBuffers[] = { model.mesh.vertexBuffer };
 		VkDeviceSize offsets[] = { 0 };
 		vkCmdBindVertexBuffers(commandBuffer, 0, 1, vertexBuffers, offsets);
@@ -1067,7 +1068,7 @@ void VulkanRenderer::createRenderPass() {
 	VkAttachmentDescription colorAttachment{};
 	colorAttachment.format = swapChainImageFormat;
 	colorAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
-	colorAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+	colorAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;00gg
 	colorAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
 	colorAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
 	colorAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
