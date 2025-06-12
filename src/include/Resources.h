@@ -35,10 +35,7 @@ public:
 	void unload();
 
 	inline const Model& getModel(ModelType model) const { return models[static_cast<int>(model)]; }
-	//inline const array<Shader, 2>& getLitShaders() const { return litShaders; }
 
 private:
-	//array<Shader, 2> litShaders;
-	//array<Shader, 1> textShaders;
 	array<Model, 12> models;
 };

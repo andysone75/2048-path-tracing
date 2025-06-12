@@ -54,4 +54,5 @@ private:
     void moveCameraRight();
     void moveCameraLeft();
     void go(MoveDirection direction);
+    void undoMove();
 };

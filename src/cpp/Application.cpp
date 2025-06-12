@@ -122,6 +122,9 @@ void Application::keyCallback(int key, int action) {
         else if (key == GLFW_KEY_A) {
             moveCameraLeft();
         }
+        else if (key == GLFW_KEY_BACKSPACE) {
+            undoMove();
+        }
     }
 }
 
@@ -155,4 +158,9 @@ void Application::go(MoveDirection direction) {
     if (boardChanged) {
         view.updateBoard();
     }
+}
+
+void Application::undoMove() {
+    game.undoMove();
+    view.updateBoardFast();
 }

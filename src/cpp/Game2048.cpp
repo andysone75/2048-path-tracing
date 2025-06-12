@@ -118,7 +118,7 @@ void Game2048::onGoComplete(MoveDirection moveDirection, int& spawnX, int& spawn
         addRandom(spawnX, spawnY);
 
         historyTree.emplace_back();
-        int newNodeIndex = historyTree.size() - 1;
+        int newNodeIndex = (int)historyTree.size() - 1;
 
         HistoryTreeNode& currentNode = historyTree[historyPointer];
 
@@ -246,7 +246,7 @@ void Game2048::addRandom(int& posX, int& posY) {
 
     static std::random_device rd;
     static std::mt19937 gen(rd());
-    std::uniform_int_distribution<> dist(0, emptyCells.size() - 1);
+    std::uniform_int_distribution<> dist(0, (int)emptyCells.size() - 1);
 
     auto [x, y] = emptyCells[dist(gen)];
     board[x][y] = 1;

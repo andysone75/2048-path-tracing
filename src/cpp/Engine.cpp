@@ -28,7 +28,7 @@ void Mesh::GenCube(std::vector<float>& vertices, std::vector<uint16_t>& indices,
     memcpy(vertices.data(), vert, sizeof(vert));
 
     indices.resize(36);
-    for (size_t i = 0; i < 36; i++) {
+    for (uint16_t i = 0; i < 36; i++) {
         indices[i] = i;
     }
 

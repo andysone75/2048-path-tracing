@@ -306,7 +306,7 @@ int rateDeviceSuitability(VkPhysicalDevice device, VkSurfaceKHR surface) {
 
 VkSurfaceFormatKHR chooseSwapSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& availableFormats) {
 	for (const auto& availableFormat : availableFormats) {
-		if (availableFormat.format == VK_FORMAT_B8G8R8A8_SRGB &&
+		if (availableFormat.format == VK_FORMAT_R8G8B8_SRGB &&
 			availableFormat.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR) {
 
 			return availableFormat;
@@ -382,6 +382,7 @@ void VulkanRenderer::init() {
 	createCommandBuffers();
 	createSyncObjects();
 	createDescriptorSetLayout();
+	createCubesBuffers();
 	createGraphicsPipeline();
 	createUniformBuffers();
 	createDescriptorPool();
@@ -474,14 +475,28 @@ void VulkanRenderer::cleanup() {
 		vkDestroySemaphore(device, renderFinishedSemaphores[i], nullptr);
 	}
 
-	//vkDestroyBuffer(device, indexBuffer, nullptr);
-	//vkFreeMemory(device, indexBufferMemory, nullptr);
+	for (size_t i = 0; i < buffers.size(); i++) {
+		vkDestroyBuffer(device, buffers[i], nullptr);
+	}
 
-	//vkDestroyBuffer(device, vertexBuffer, nullptr);
-	//vkFreeMemory(device, vertexBufferMemory, nullptr);
+	for (size_t i = 0; i < buffersMemory.size(); i++) {
+		vkFreeMemory(device, buffersMemory[i], nullptr);
+	}
+
+	for (size_t i = 0; i < cubesBuffers.size(); i++) {
+		vkDestroyBuffer(device, cubesBuffers[i], nullptr);
+	}
+
+	for (size_t i = 0; i < cubesBuffersMemory.size(); i++) {
+		vkFreeMemory(device, cubesBuffersMemory[i], nullptr);
+	}
 
 	vkDestroyDescriptorPool(device, descriptorPool, nullptr);
+	vkDestroyDescriptorPool(device, cubesDescriptorPool, nullptr);
+
 	vkDestroyDescriptorSetLayout(device, descriptorSetLayout, nullptr);
+	vkDestroyDescriptorSetLayout(device, cubesDescriptorSetLayout, nullptr);
+
 	vkDestroyPipeline(device, graphicsPipeline, nullptr);
 	vkDestroyPipelineLayout(device, pipelineLayout, nullptr);
 	vkDestroyRenderPass(device, renderPass, nullptr);
@@ -573,6 +588,12 @@ Mesh VulkanRenderer::genCube(Color color) {
 
 	mesh.indexCount = indices.size();
 
+	buffers.push_back(mesh.vertexBuffer);
+	buffers.push_back(mesh.indexBuffer);
+
+	buffersMemory.push_back(mesh.vertexBufferMemory);
+	buffersMemory.push_back(mesh.indexBufferMemory);
+
 	return mesh;
 }
 
@@ -605,8 +626,9 @@ void VulkanRenderer::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t
 	renderPassInfo.renderArea.offset = { 0,0 };
 	renderPassInfo.renderArea.extent = swapChainExtent;
 
+	glm::vec4 bgCol = glm::vec4(70.0f, 129.0f, 221.0f, 255.0f) / 255.0f;
 	VkClearValue clearColors[2] = {};
-	clearColors[0].color = {{0.0f, 0.0f, 0.0f, 1.0f}};
+	clearColors[0].color = {{bgCol.r, bgCol.g, bgCol.b, bgCol.a}};
 	clearColors[1].depthStencil = {1.0f, 0};
 
 	renderPassInfo.clearValueCount = 2;
@@ -630,12 +652,39 @@ void VulkanRenderer::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t
 	vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
 
 	for (size_t i = 0; i < objects.size(); i++) {
+		cubes[i].model = glm::translate(glm::mat4(1), objects[i].second) * objects[i].first.transform;
+	}
+
+	if (objects.size() < MAX_MODELS) {
+		cubes[objects.size()].model = glm::mat4(0.0f);
+	}
+
+	void* data;
+	size_t cubesBufferSize = cubes.size() * sizeof(CubeData);
+	vkMapMemory(device, cubesBuffersMemory[currentFrame], 0, cubesBufferSize, 0, &data);
+	memcpy(data, cubes.data(), cubesBufferSize);
+	vkUnmapMemory(device, cubesBuffersMemory[currentFrame]);
+
+	for (size_t i = 0; i < objects.size(); i++) {
+		VkDescriptorSet descriptorSetss[] = {
+			descriptorSets[currentFrame][i],
+			cubesDescriptorSets[currentFrame]
+		};
+
+		vkCmdBindDescriptorSets(
+			commandBuffer,
+			VK_PIPELINE_BIND_POINT_GRAPHICS,
+			pipelineLayout,
+			0, 2,
+			descriptorSetss,
+			0, nullptr
+		);
+
 		Model model = objects[i].first;
 		VkBuffer vertexBuffers[] = { model.mesh.vertexBuffer };
 		VkDeviceSize offsets[] = { 0 };
 		vkCmdBindVertexBuffers(commandBuffer, 0, 1, vertexBuffers, offsets);
 		vkCmdBindIndexBuffer(commandBuffer, model.mesh.indexBuffer, 0, VK_INDEX_TYPE_UINT16);
-		vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &descriptorSets[currentFrame][i], 0, nullptr);
 		vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(model.mesh.indexCount), 1, 0, 0, 0);
 	}
 
@@ -658,6 +707,7 @@ void VulkanRenderer::recreateSwapChain() {
 
 	createSwapChain();
 	createImageViews();
+	createDepthBuffers();
 	createFramebuffers();
 }
 
@@ -671,6 +721,18 @@ void VulkanRenderer::cleanupSwapChain() {
 	}
 
 	vkDestroySwapchainKHR(device, swapChain, nullptr);
+
+	for (size_t i = 0; i < depthImages.size(); i++) {
+		vkDestroyImageView(device, depthImagesViews[i], nullptr);
+	}
+
+	for (size_t i = 0; i < depthImages.size(); i++) {
+		vkDestroyImage(device, depthImages[i], nullptr);
+	}
+
+	for (size_t i = 0; i < depthImagesMemory.size(); i++) {
+		vkFreeMemory(device, depthImagesMemory[i], nullptr);
+	}
 }
 
 VkShaderModule VulkanRenderer::createShaderModule(const std::vector<char>& code) {
@@ -1154,13 +1216,13 @@ void VulkanRenderer::createSyncObjects() {
 		if (vkCreateSemaphore(device, &semaphoreInfo, nullptr, &imageAvailableSemaphores[i]) != VK_SUCCESS ||
 			vkCreateFence(device, &fenceInfo, nullptr, &inFlightFences[i]) != VK_SUCCESS) {
 
-			throw std::runtime_error("Failed to creaet synchronization objects for a frame");
+			throw std::runtime_error("Failed to create synchronization objects for a frame");
 		}
 	}
 
 	for (size_t i = 0; i < swapChainImages.size(); i++) {
 		if (vkCreateSemaphore(device, &semaphoreInfo, nullptr, &renderFinishedSemaphores[i]) != VK_SUCCESS) {
-			throw std::runtime_error("Failed to creaet synchronization objects for a frame");
+			throw std::runtime_error("Failed to create synchronization objects for a frame");
 		}
 	}
 }
@@ -1174,7 +1236,7 @@ void VulkanRenderer::createDescriptorSetLayout() {
 	uboLayoutBinding.pImmutableSamplers = nullptr;
 
 	VkDescriptorSetLayoutCreateInfo layoutInfo{};
-	layoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
+	layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
 	layoutInfo.bindingCount = 1;
 	layoutInfo.pBindings = &uboLayoutBinding;
 
@@ -1298,10 +1360,15 @@ void VulkanRenderer::createGraphicsPipeline() {
 	dynamicState.dynamicStateCount = static_cast<uint32_t>(dynamicStates.size());
 	dynamicState.pDynamicStates = dynamicStates.data();
 
+	VkDescriptorSetLayout descriptorSetLayouts[] = {
+		descriptorSetLayout,
+		cubesDescriptorSetLayout
+	};
+
 	VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
 	pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-	pipelineLayoutInfo.setLayoutCount = 1;
-	pipelineLayoutInfo.pSetLayouts = &descriptorSetLayout;
+	pipelineLayoutInfo.setLayoutCount = 2;
+	pipelineLayoutInfo.pSetLayouts = descriptorSetLayouts;
 	pipelineLayoutInfo.pushConstantRangeCount = 0;
 	pipelineLayoutInfo.pPushConstantRanges = nullptr;
 
@@ -1420,5 +1487,73 @@ void VulkanRenderer::createDescriptorSets() {
 
 			vkUpdateDescriptorSets(device, 1, &descriptorWrite, 0, nullptr);
 		}
+	}
+}
+
+void VulkanRenderer::createCubesBuffers() {
+	cubes.resize(MAX_MODELS);
+	VkDeviceSize bufferSize = sizeof(CubeData) * MAX_MODELS;
+
+	VkDescriptorSetLayoutBinding binding = {};
+	binding.binding = 1;
+	binding.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+	binding.descriptorCount = 1;
+	binding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+
+	VkDescriptorSetLayoutCreateInfo layoutInfo = {};
+	layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+	layoutInfo.bindingCount = 1;
+	layoutInfo.pBindings = &binding;
+
+	vkCreateDescriptorSetLayout(device, &layoutInfo, nullptr, &cubesDescriptorSetLayout);
+
+	cubesBuffers.resize(MAX_FRAMES_IN_FLIGHT);
+	cubesDescriptorSets.resize(MAX_FRAMES_IN_FLIGHT);
+	cubesBuffersMemory.resize(MAX_FRAMES_IN_FLIGHT);
+
+	VkDescriptorPoolSize poolSize = {};
+	poolSize.type = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+	poolSize.descriptorCount = MAX_FRAMES_IN_FLIGHT;
+
+	VkDescriptorPoolCreateInfo poolInfo = {};
+	poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
+	poolInfo.poolSizeCount = 1;
+	poolInfo.pPoolSizes = &poolSize;
+	poolInfo.maxSets = MAX_FRAMES_IN_FLIGHT;
+
+	vkCreateDescriptorPool(device, &poolInfo, nullptr, &cubesDescriptorPool);
+
+	for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
+		createBuffer(
+			bufferSize,
+			VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
+			VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+			cubesBuffers[i],
+			cubesBuffersMemory[i]
+		);
+
+		VkDescriptorSetAllocateInfo allocInfo = {};
+		allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+		allocInfo.descriptorPool = cubesDescriptorPool;
+		allocInfo.descriptorSetCount = 1;
+		allocInfo.pSetLayouts = &cubesDescriptorSetLayout;
+
+		vkAllocateDescriptorSets(device, &allocInfo, &cubesDescriptorSets[i]);
+
+		VkDescriptorBufferInfo bufferInfo = {};
+		bufferInfo.buffer = cubesBuffers[i];
+		bufferInfo.offset = 0;
+		bufferInfo.range = bufferSize;
+
+		VkWriteDescriptorSet descriptorWrite = {};
+		descriptorWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+		descriptorWrite.dstSet = cubesDescriptorSets[i];
+		descriptorWrite.dstBinding = 1;
+		descriptorWrite.dstArrayElement = 0;
+		descriptorWrite.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+		descriptorWrite.descriptorCount = 1;
+		descriptorWrite.pBufferInfo = &bufferInfo;
+
+		vkUpdateDescriptorSets(device, 1, &descriptorWrite, 0, nullptr);
 	}
 }

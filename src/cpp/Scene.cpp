@@ -30,7 +30,7 @@ void Scene::initialize(const Resources* resources) {
 int Scene::createObjectOpaque(ModelType model, glm::vec3 position) {
     SceneObject object = SceneObject(resources->getModel(model), position);
     objects.push_back(object);
-    int index = objects.size() - 1;
+    int index = (int)objects.size() - 1;
     opaqueObjects.push_back(index);
     return index;
 }
@@ -38,7 +38,7 @@ int Scene::createObjectOpaque(ModelType model, glm::vec3 position) {
 int Scene::createObjectTransparent(ModelType model, glm::vec3 position) {
     SceneObject object = SceneObject(resources->getModel(model), position);
     objects.push_back(object);
-    int index = objects.size() - 1;
+    int index = (int)objects.size() - 1;
     transparentObjects.push_back(index);
     return index;
 }

@@ -25,7 +25,7 @@ void View2048::update(float dt) {
     }
 
     float t = 1.0f - animationTimer / ANIMATION_TIME;
-    t = 1.0f - std::pow(1.0f - t, 3); // out cubic easing
+    t = 1.0f - (float)std::pow(1.0f - t, 3); // out cubic easing
 
     for (size_t i = 0; i < animationTargets.size(); i++) {
         glm::vec3 pos = glm::mix(

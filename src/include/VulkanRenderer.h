@@ -7,6 +7,10 @@
 
 #include <vector>
 
+struct CubeData {
+	alignas(16) glm::mat4 model;
+};
+
 class VulkanRenderer {
 public:
 	bool framebufferResized = false;
@@ -20,7 +24,7 @@ public:
 
 private:
 	const int MAX_FRAMES_IN_FLIGHT = 2;
-	const int MAX_MODELS = 64;
+	const int MAX_MODELS = 1024;
 
 	GLFWwindow* window;
 	VkInstance instance;
@@ -47,15 +51,25 @@ private:
 	std::vector<VkSemaphore> renderFinishedSemaphores;
 	std::vector<VkFence> inFlightFences;
 	uint32_t currentFrame = 0;
-	VkDescriptorSetLayout descriptorSetLayout;
 	VkPipelineLayout pipelineLayout;
 	VkPipeline graphicsPipeline;
 
+	std::vector<VkBuffer> buffers;
+	std::vector<VkDeviceMemory> buffersMemory;
+
+	VkDescriptorSetLayout descriptorSetLayout;
 	VkDescriptorPool descriptorPool;
 	std::vector<std::vector<VkBuffer>> uniformBuffers;
 	std::vector<std::vector<VkDeviceMemory>> uniformBuffersMemory;
 	std::vector<std::vector<void*>> uniformBuffersMapped;
 	std::vector<std::vector<VkDescriptorSet>> descriptorSets;
+
+	std::vector<CubeData> cubes;
+	VkDescriptorSetLayout cubesDescriptorSetLayout;
+	VkDescriptorPool cubesDescriptorPool;
+	std::vector<VkBuffer> cubesBuffers;
+	std::vector<VkDescriptorSet> cubesDescriptorSets;
+	std::vector<VkDeviceMemory> cubesBuffersMemory;
 
 	void createInstance();
 	void setupDebugMessenger();
@@ -75,6 +89,7 @@ private:
 	void createDescriptorPool();
 	void createUniformBuffers();
 	void createDescriptorSets();
+	void createCubesBuffers();
 
 	void updateUniformBuffer(uint32_t currentImage, const std::vector<std::pair<Model, glm::vec3>>& objects, const Camera& camera);
 	void recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex, const std::vector<std::pair<Model, glm::vec3>>& objects);
