@@ -406,3 +406,4 @@ FodyWeavers.xsd
 
 third-party/
 out/
+shaders/*.spv
