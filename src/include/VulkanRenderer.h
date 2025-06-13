@@ -54,6 +54,7 @@ private:
 	uint32_t currentFrame = 0;
 	VkPipelineLayout pipelineLayout;
 	VkPipeline graphicsPipeline;
+	int frameCount = 0;
 
 	std::vector<VkBuffer> buffers;
 	std::vector<VkDeviceMemory> buffersMemory;
@@ -71,6 +72,13 @@ private:
 	std::vector<VkBuffer> cubesBuffers;
 	std::vector<VkDescriptorSet> cubesDescriptorSets;
 	std::vector<VkDeviceMemory> cubesBuffersMemory;
+
+	VkImage accumulationImage;
+	VkDeviceMemory accumulationImageMemory;
+	VkImageView accumulationImageView;
+	VkDescriptorSetLayout accumulationImageDescriptorSetLayout;
+	VkDescriptorPool accumulationImageDescriptorPool;
+	VkDescriptorSet accumulationImageDescriptorSet;
 
 	void createInstance();
 	void setupDebugMessenger();
@@ -91,6 +99,7 @@ private:
 	void createUniformBuffers();
 	void createDescriptorSets();
 	void createCubesBuffers();
+	void createAccumulateImage();
 
 	void updateUniformBuffer(uint32_t currentImage, const std::vector<SceneObject>& objects, const Camera& camera);
 	void recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex, const std::vector<SceneObject>& objects);

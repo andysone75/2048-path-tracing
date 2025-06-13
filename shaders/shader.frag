@@ -9,16 +9,21 @@ layout(set = 1, binding = 1) readonly buffer CubesBuffer {
     CubeData cubes[];
 };
 
+layout(set = 2, binding = 2, rgba32f) uniform image2D prevFrame;
+
 layout(location = 0) in vec3 fragColor;
 layout(location = 1) in vec3 fragWorldPos;
 layout(location = 2) in vec3 fragWorldNormal;
+layout(location = 3) in vec2 fragProjPos;
+layout(location = 4) in float time;
+layout(location = 5) in float frameCount;
 
 layout(location = 0) out vec4 outColor;
 
 const vec3 lightDir = vec3(-0.96, -2.31, 1.68);
 const int MAX_MODELS = 1024;
 const int MAX_DEPTH = 5;
-const int SAMPLES = 16;
+const int SAMPLES = 1;
 
 #define PI 3.1415926535
 
@@ -148,7 +153,7 @@ vec3 tracePath(vec3 rayOrig, vec3 rayDir) {
 
         if (hit) {
             rayOrig = hitPoint;
-            rayDir = sampleDiffuseDirection(hitPoint, hitNormal, 0);
+            rayDir = sampleDiffuseDirection(hitPoint, hitNormal, time);
 
             result += throughput * hitColor;
             throughput *= hitColor;
@@ -167,12 +172,31 @@ void main() {
     vec3 totalColor = vec3(0);
     for (int i = 0; i < SAMPLES; i++) {
         float directLight = computeDirectLighting(fragWorldPos, normalize(fragWorldNormal));
-        vec3 newRay = sampleDiffuseDirection(fragWorldPos, fragWorldNormal, i);
+        vec3 newRay = sampleDiffuseDirection(fragWorldPos, fragWorldNormal, i + time);
         vec3 indirectLight = tracePath(fragWorldPos + normalize(fragWorldNormal) * 0.001, newRay);
-        vec3 color = clamp(fragColor * (directLight + indirectLight), vec3(0), vec3(1));
+        //vec3 color = clamp(fragColor * (directLight + indirectLight), vec3(0), vec3(1));
+        vec3 color = clamp(fragColor * (directLight), vec3(0), vec3(1));
         totalColor += color;
     }
     totalColor /= float(SAMPLES);
+    
+    ivec2 pixelCoords = ivec2(gl_FragCoord.xy);
+    vec3 color = totalColor;
 
-	outColor = vec4(totalColor, 1.0);
+    if (frameCount == 0) {
+        imageStore(prevFrame, pixelCoords, vec4(totalColor, 1.0));
+    } else if (frameCount <= 1) {
+        vec3 accum = imageLoad(prevFrame, pixelCoords).rgb;
+        vec3 newValue = mix(accum, totalColor, 1.0 / (frameCount + 1));
+        imageStore(prevFrame, pixelCoords, vec4(newValue, 1.0));
+        color = newValue;
+    } else {
+        vec3 accum = imageLoad(prevFrame, pixelCoords).rgb;
+        vec3 newValue = mix(accum, totalColor, 1.0 / (frameCount + 1));
+        //imageStore(prevFrame, pixelCoords, vec4(newValue, 1.0));
+        color = newValue;
+        color = accum;
+    }
+
+	outColor = vec4(color, 1.0);
 }

@@ -67,6 +67,8 @@ struct UniformBufferObject {
 	alignas(16) glm::mat4 model;
 	alignas(16) glm::mat4 view;
 	alignas(16) glm::mat4 proj;
+	float time;
+	float frameCount;
 };
 
 const std::vector<const char*> validationLayers = {
@@ -383,6 +385,7 @@ void VulkanRenderer::init() {
 	createSyncObjects();
 	createDescriptorSetLayout();
 	createCubesBuffers();
+	createAccumulateImage();
 	createGraphicsPipeline();
 	createUniformBuffers();
 	createDescriptorPool();
@@ -452,6 +455,7 @@ void VulkanRenderer::render(const std::vector<SceneObject>& objects, const Camer
 	}
 
 	currentFrame = (currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
+	frameCount++;
 }
 
 void VulkanRenderer::cleanup() {
@@ -604,6 +608,8 @@ void VulkanRenderer::updateUniformBuffer(uint32_t currentImage, const std::vecto
 		ubo.view = camera.getViewMatrix();
 		ubo.proj = camera.getProjectionMatrixOrtho();
 		ubo.proj[1][1] *= -1;
+		ubo.time = glfwGetTime();
+		ubo.frameCount = (float)frameCount;
 
 		memcpy(uniformBuffersMapped[currentImage][i], &ubo, sizeof(ubo));
 	}
@@ -669,14 +675,15 @@ void VulkanRenderer::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t
 	for (size_t i = 0; i < objects.size(); i++) {
 		VkDescriptorSet descriptorSetss[] = {
 			descriptorSets[currentFrame][i],
-			cubesDescriptorSets[currentFrame]
+			cubesDescriptorSets[currentFrame],
+			accumulationImageDescriptorSet
 		};
 
 		vkCmdBindDescriptorSets(
 			commandBuffer,
 			VK_PIPELINE_BIND_POINT_GRAPHICS,
 			pipelineLayout,
-			0, 2,
+			0, 3,
 			descriptorSetss,
 			0, nullptr
 		);
@@ -937,6 +944,7 @@ void VulkanRenderer::createLogicalDevice() {
 	}
 
 	VkPhysicalDeviceFeatures deviceFeatures{};
+	deviceFeatures.fragmentStoresAndAtomics = VK_TRUE;
 
 	VkDeviceCreateInfo createInfo{};
 	createInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
@@ -1068,7 +1076,7 @@ void VulkanRenderer::createRenderPass() {
 	VkAttachmentDescription colorAttachment{};
 	colorAttachment.format = swapChainImageFormat;
 	colorAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
-	colorAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;00gg
+	colorAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
 	colorAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
 	colorAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
 	colorAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
@@ -1119,8 +1127,22 @@ void VulkanRenderer::createRenderPass() {
 	dependency.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
 	dependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
 
-	renderPassInfo.dependencyCount = 1;
-	renderPassInfo.pDependencies = &dependency;
+	VkSubpassDependency selfDependency{};
+	selfDependency.srcSubpass = 0;
+	selfDependency.dstSubpass = 0;
+	selfDependency.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+	selfDependency.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+	selfDependency.srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+	selfDependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT;
+	selfDependency.dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT;
+
+	VkSubpassDependency dependencies[] = {
+		dependency,
+		selfDependency
+	};
+
+	renderPassInfo.dependencyCount = 2;
+	renderPassInfo.pDependencies = dependencies;
 
 	if (vkCreateRenderPass(device, &renderPassInfo, nullptr, &renderPass) != VK_SUCCESS) {
 		throw std::runtime_error("Failed to create render pass");
@@ -1363,12 +1385,13 @@ void VulkanRenderer::createGraphicsPipeline() {
 
 	VkDescriptorSetLayout descriptorSetLayouts[] = {
 		descriptorSetLayout,
-		cubesDescriptorSetLayout
+		cubesDescriptorSetLayout,
+		accumulationImageDescriptorSetLayout
 	};
 
 	VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
 	pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-	pipelineLayoutInfo.setLayoutCount = 2;
+	pipelineLayoutInfo.setLayoutCount = 3;
 	pipelineLayoutInfo.pSetLayouts = descriptorSetLayouts;
 	pipelineLayoutInfo.pushConstantRangeCount = 0;
 	pipelineLayoutInfo.pPushConstantRanges = nullptr;
@@ -1557,4 +1580,93 @@ void VulkanRenderer::createCubesBuffers() {
 
 		vkUpdateDescriptorSets(device, 1, &descriptorWrite, 0, nullptr);
 	}
+}
+
+void VulkanRenderer::createAccumulateImage() {
+	VkFormat imageFormat = VK_FORMAT_R32G32B32A32_SFLOAT;
+
+	VkImageCreateInfo imageInfo = {};
+	imageInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
+	imageInfo.imageType = VK_IMAGE_TYPE_2D;
+	imageInfo.format = imageFormat;
+	imageInfo.extent = { swapChainExtent.width, swapChainExtent.height, 1 };
+	imageInfo.mipLevels = 1;
+	imageInfo.arrayLayers = 1;
+	imageInfo.samples = VK_SAMPLE_COUNT_1_BIT;
+	imageInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
+	imageInfo.usage = VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
+	imageInfo.initialLayout = VK_IMAGE_LAYOUT_GENERAL;
+
+	vkCreateImage(device, &imageInfo, nullptr, &accumulationImage);
+
+	VkMemoryRequirements memRequirements;
+	vkGetImageMemoryRequirements(device, accumulationImage, &memRequirements);
+
+	VkMemoryAllocateInfo allocInfo{};
+	allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+	allocInfo.allocationSize = memRequirements.size;
+	allocInfo.memoryTypeIndex = findMemoryType(memRequirements.memoryTypeBits, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+
+	vkAllocateMemory(device, &allocInfo, nullptr, &accumulationImageMemory);
+	vkBindImageMemory(device, accumulationImage, accumulationImageMemory, 0);
+
+	VkImageViewCreateInfo viewInfo{};
+	viewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+	viewInfo.image = accumulationImage;
+	viewInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
+	viewInfo.format = imageFormat;
+	viewInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+	viewInfo.subresourceRange.baseMipLevel = 0;
+	viewInfo.subresourceRange.levelCount = 1;
+	viewInfo.subresourceRange.baseArrayLayer = 0;
+	viewInfo.subresourceRange.layerCount = 1;
+
+	vkCreateImageView(device, &viewInfo, nullptr, &accumulationImageView);
+
+	VkDescriptorSetLayoutBinding binding = {};
+	binding.binding = 2;
+	binding.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
+	binding.descriptorCount = 1;
+	binding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+
+	VkDescriptorSetLayoutCreateInfo layoutInfo = {};
+	layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+	layoutInfo.bindingCount = 1;
+	layoutInfo.pBindings = &binding;
+
+	vkCreateDescriptorSetLayout(device, &layoutInfo, nullptr, &accumulationImageDescriptorSetLayout);
+
+	VkDescriptorPoolSize poolSize = {};
+	poolSize.type = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
+	poolSize.descriptorCount = 1;
+
+	VkDescriptorPoolCreateInfo poolInfo = {};
+	poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
+	poolInfo.poolSizeCount = 1;
+	poolInfo.pPoolSizes = &poolSize;
+	poolInfo.maxSets = 1;
+
+	vkCreateDescriptorPool(device, &poolInfo, nullptr, &accumulationImageDescriptorPool);
+
+	VkDescriptorSetAllocateInfo allocInfo1 = {};
+	allocInfo1.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+	allocInfo1.descriptorPool = accumulationImageDescriptorPool;
+	allocInfo1.descriptorSetCount = 1;
+	allocInfo1.pSetLayouts = &accumulationImageDescriptorSetLayout;
+
+	vkAllocateDescriptorSets(device, &allocInfo1, &accumulationImageDescriptorSet);
+
+	VkDescriptorImageInfo imageInfo1 = {};
+	imageInfo1.imageView = accumulationImageView;
+	imageInfo1.imageLayout = VK_IMAGE_LAYOUT_GENERAL;
+
+	VkWriteDescriptorSet descriptorWrite = {};
+	descriptorWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+	descriptorWrite.dstSet = accumulationImageDescriptorSet;
+	descriptorWrite.dstBinding = 2;
+	descriptorWrite.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
+	descriptorWrite.descriptorCount = 1;
+	descriptorWrite.pImageInfo = &imageInfo1;
+
+	vkUpdateDescriptorSets(device, 1, &descriptorWrite, 0, nullptr);
 }
