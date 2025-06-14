@@ -20,6 +20,7 @@ public:
 	void init();
 	void render(const std::vector<SceneObject>& objects, const Camera& camera);
 	void cleanup();
+	void resetAccumulation();
 
 	Mesh genCube(Color color = { 255,255, 255, 255 });
 

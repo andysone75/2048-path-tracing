@@ -174,8 +174,8 @@ void main() {
         float directLight = computeDirectLighting(fragWorldPos, normalize(fragWorldNormal));
         vec3 newRay = sampleDiffuseDirection(fragWorldPos, fragWorldNormal, i + time);
         vec3 indirectLight = tracePath(fragWorldPos + normalize(fragWorldNormal) * 0.001, newRay);
-        //vec3 color = clamp(fragColor * (directLight + indirectLight), vec3(0), vec3(1));
-        vec3 color = clamp(fragColor * (directLight), vec3(0), vec3(1));
+        vec3 color = clamp(fragColor * (directLight + indirectLight), vec3(0), vec3(1));
+        //vec3 color = clamp(fragColor * (directLight), vec3(0), vec3(1));
         totalColor += color;
     }
     totalColor /= float(SAMPLES);
@@ -185,18 +185,20 @@ void main() {
 
     if (frameCount == 0) {
         imageStore(prevFrame, pixelCoords, vec4(totalColor, 1.0));
-    } else if (frameCount <= 1) {
+    //} else if (frameCount <= 1) {
+    } else {
         vec3 accum = imageLoad(prevFrame, pixelCoords).rgb;
         vec3 newValue = mix(accum, totalColor, 1.0 / (frameCount + 1));
         imageStore(prevFrame, pixelCoords, vec4(newValue, 1.0));
         color = newValue;
-    } else {
-        vec3 accum = imageLoad(prevFrame, pixelCoords).rgb;
-        vec3 newValue = mix(accum, totalColor, 1.0 / (frameCount + 1));
-        //imageStore(prevFrame, pixelCoords, vec4(newValue, 1.0));
-        color = newValue;
-        color = accum;
     }
+    // } else {
+    //     vec3 accum = imageLoad(prevFrame, pixelCoords).rgb;
+    //     vec3 newValue = mix(accum, totalColor, 1.0 / (frameCount + 1));
+    //     //imageStore(prevFrame, pixelCoords, vec4(newValue, 1.0));
+    //     color = newValue;
+    //     color = accum;
+    // }
 
 	outColor = vec4(color, 1.0);
 }

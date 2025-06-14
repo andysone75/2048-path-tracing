@@ -518,6 +518,10 @@ void VulkanRenderer::cleanup() {
 	glfwTerminate();
 }
 
+void VulkanRenderer::resetAccumulation() {
+	frameCount = 0;
+}
+
 Mesh VulkanRenderer::genCube(Color color) {
 	std::vector<float> positions;
 	std::vector<uint16_t> indices;
