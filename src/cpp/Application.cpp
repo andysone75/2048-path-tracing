@@ -83,9 +83,17 @@ void Application::mainLoop() {
         }
 
         cameraAngle = Utils::lerp(cameraAngle, cameraStartAngle + cameraAngleOffset, dt * 15.0f);
+        glm::vec3 oldCameraPos = camera.position;
         camera.position = cameraOffset + getCameraPos(cameraAngle, cameraRadius, cameraHeight);
+        glm::vec3 cameraDeltaPos = camera.position - oldCameraPos;
+        float cameraDeltaPosDistSqr = glm::dot(cameraDeltaPos, cameraDeltaPos);
 
         view.update(dt);
+
+        if (cameraDeltaPosDistSqr > .001f || view.getAnimationTimer() > .001f) {
+            vulkan.resetAccumulation();
+        }
+
         vulkan.render(objects, camera);
     }
 }
@@ -135,8 +143,6 @@ void Application::moveCameraRight() {
     for (int i = 0; i < 3; ++i)
         moveInputs[i] = moveInputs[i + 1];
     moveInputs[3] = first;
-
-    vulkan.resetAccumulation();
 }
 
 void Application::moveCameraLeft() {
@@ -146,8 +152,6 @@ void Application::moveCameraLeft() {
     for (int i = 3; i > 0; --i)
         moveInputs[i] = moveInputs[i - 1];
     moveInputs[0] = last;
-
-    vulkan.resetAccumulation();
 }
 
 void Application::go(MoveDirection direction) {
@@ -161,11 +165,11 @@ void Application::go(MoveDirection direction) {
 
     if (boardChanged) {
         view.updateBoard();
-        vulkan.resetAccumulation();
     }
 }
 
 void Application::undoMove() {
     game.undoMove();
     view.updateBoardFast();
+    vulkan.resetAccumulation();
 }

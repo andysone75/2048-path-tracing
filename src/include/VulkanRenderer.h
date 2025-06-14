@@ -40,11 +40,16 @@ private:
 	std::vector<VkImage> swapChainImages;
 	VkFormat swapChainImageFormat;
 	VkExtent2D swapChainExtent;
-	VkFormat depthFormat;
 	std::vector<VkImage> depthImages;
 	std::vector<VkDeviceMemory> depthImagesMemory;
 	std::vector<VkImageView> depthImagesViews;
+	std::vector<VkFramebuffer> depthFramebuffers;
+	std::vector<VkDescriptorSet> depthImageDescriptorSets;
+	VkDescriptorSetLayout depthImageDescriptorSetLayout;
+	VkDescriptorPool depthImageDescriptorPool;
+	VkSampler depthSampler;
 	VkRenderPass renderPass;
+	VkRenderPass depthRenderPass;
 	std::vector<VkImageView> swapChainImageViews;
 	std::vector<VkFramebuffer> swapChainFramebuffers;
 	VkCommandPool commandPool;
@@ -55,6 +60,7 @@ private:
 	uint32_t currentFrame = 0;
 	VkPipelineLayout pipelineLayout;
 	VkPipeline graphicsPipeline;
+	VkPipeline depthPipeline;
 	int frameCount = 0;
 
 	std::vector<VkBuffer> buffers;
@@ -87,8 +93,11 @@ private:
 	void pickPhysicalDevice();
 	void createLogicalDevice();
 	void createSwapChain();
+	void createDepthDescriptorSets();
+	void createDepthSampler();
 	void createDepthBuffers();
 	void createRenderPass();
+	void createDepthRenderPass();
 	void createImageViews();
 	void createFramebuffers();
 	void createCommandPool();
@@ -96,10 +105,12 @@ private:
 	void createSyncObjects();
 	void createDescriptorSetLayout();
 	void createGraphicsPipeline();
+	void createDepthPipeline();
 	void createDescriptorPool();
 	void createUniformBuffers();
 	void createDescriptorSets();
 	void createCubesBuffers();
+	void createAccumulationDescriptorSets();
 	void createAccumulateImage();
 
 	void updateUniformBuffer(uint32_t currentImage, const std::vector<SceneObject>& objects, const Camera& camera);

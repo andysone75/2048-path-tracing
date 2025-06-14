@@ -25,6 +25,7 @@ public:
     void updateBoardFast();
     void updateBoard();
     void updateBoard(const std::function<void()>& callback);
+    inline float getAnimationTimer() const { return animationTimer; }
 
 private:
     Game2048* game;

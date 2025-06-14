@@ -10,6 +10,7 @@ layout(set = 1, binding = 1) readonly buffer CubesBuffer {
 };
 
 layout(set = 2, binding = 2, rgba32f) uniform image2D prevFrame;
+layout(set = 3, binding = 3) uniform sampler2D depthSampler;
 
 layout(location = 0) in vec3 fragColor;
 layout(location = 1) in vec3 fragWorldPos;
@@ -22,8 +23,8 @@ layout(location = 0) out vec4 outColor;
 
 const vec3 lightDir = vec3(-0.96, -2.31, 1.68);
 const int MAX_MODELS = 1024;
-const int MAX_DEPTH = 5;
-const int SAMPLES = 1;
+const int MAX_DEPTH = 3;
+const int SAMPLES = 4;
 
 #define PI 3.1415926535
 
@@ -166,6 +167,14 @@ vec3 tracePath(vec3 rayOrig, vec3 rayDir) {
 }
 
 void main() {
+    ivec2 coord = ivec2(gl_FragCoord.xy);
+    float storedDepth = texelFetch(depthSampler, coord, 0).r;
+    float currentDepth = gl_FragCoord.z;
+
+    if (currentDepth > storedDepth + 0.001) {
+        discard;
+    }
+
     vec3 rayOrig = fragWorldPos;
     vec3 rayDir = -normalize(lightDir);
 
@@ -175,7 +184,6 @@ void main() {
         vec3 newRay = sampleDiffuseDirection(fragWorldPos, fragWorldNormal, i + time);
         vec3 indirectLight = tracePath(fragWorldPos + normalize(fragWorldNormal) * 0.001, newRay);
         vec3 color = clamp(fragColor * (directLight + indirectLight), vec3(0), vec3(1));
-        //vec3 color = clamp(fragColor * (directLight), vec3(0), vec3(1));
         totalColor += color;
     }
     totalColor /= float(SAMPLES);
@@ -185,20 +193,12 @@ void main() {
 
     if (frameCount == 0) {
         imageStore(prevFrame, pixelCoords, vec4(totalColor, 1.0));
-    //} else if (frameCount <= 1) {
     } else {
         vec3 accum = imageLoad(prevFrame, pixelCoords).rgb;
         vec3 newValue = mix(accum, totalColor, 1.0 / (frameCount + 1));
         imageStore(prevFrame, pixelCoords, vec4(newValue, 1.0));
         color = newValue;
     }
-    // } else {
-    //     vec3 accum = imageLoad(prevFrame, pixelCoords).rgb;
-    //     vec3 newValue = mix(accum, totalColor, 1.0 / (frameCount + 1));
-    //     //imageStore(prevFrame, pixelCoords, vec4(newValue, 1.0));
-    //     color = newValue;
-    //     color = accum;
-    // }
 
 	outColor = vec4(color, 1.0);
 }
