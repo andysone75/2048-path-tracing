@@ -23,26 +23,26 @@ layout(location = 0) out vec4 outColor;
 
 const vec3 lightDir = vec3(-0.96, -2.31, 1.68);
 const int MAX_MODELS = 1024;
-const int MAX_DEPTH = 3;
-const int SAMPLES = 4;
+const int MAX_DEPTH = 10;
+const int SAMPLES = 2;
 
 #define PI 3.1415926535
 
-float randomNoise(vec2 co) {
+float random(vec2 co) {
     return fract(sin(dot(co.xy, vec2(12.9898, 78.233))) * 43758.5453);
 }
 
 vec2 random2D(vec4 co) {
     return vec2(
-        randomNoise(co.xy), 
-        randomNoise(co.zw));
+        random(co.xy), 
+        random(co.zw));
 }
 
 vec3 random3D(vec4 co) {
     return vec3(
-        randomNoise(co.xy), 
-        randomNoise(co.yz), 
-        randomNoise(co.zw));
+        random(co.xy), 
+        random(co.yz), 
+        random(co.zw));
 }
 
 vec3 randomHemispherePoint(vec2 rand) {
@@ -57,8 +57,19 @@ vec3 randomHemispherePoint(vec2 rand) {
 }
 
 vec3 normalOrientedHemispherePoint(vec2 rand, vec3 n) {
-    vec3 v = randomHemispherePoint(rand);
-    return dot(v, n) < 0.0 ? -v : v;
+    return randomHemispherePoint(rand);
+}
+
+vec3 sampleDiffuseDirection(vec3 point, vec3 normal, float add) {
+    vec3 hemisphereDistributedDirection = normalOrientedHemispherePoint(random2D(vec4(point, normal.x) + add), normal);
+
+    vec3 randomVec = normalize(2.0 * random3D(vec4(point, normal.x) + add) - 1.0);
+
+    vec3 tangent = cross(randomVec, normal);
+    vec3 bitangent = cross(normal, tangent);
+    mat3 transform = mat3(tangent, bitangent, normal);
+
+    return transform * hemisphereDistributedDirection;
 }
 
 vec3 computeCubeNormal(vec3 hitPoint, vec3 cubeMin, vec3 cubeMax) {
@@ -124,24 +135,35 @@ bool intersectScene(vec3 rayOrig, vec3 rayDir) {
     return intersect;
 }
 
-float computeDirectLighting(vec3 point, vec3 normal) {
-    vec3 toLight = -normalize(lightDir);
-    bool isOccluded = intersectScene(point + normal * 0.001, toLight);
-    if (isOccluded) return 0.0;
-    float cosTheta = max(0.0, dot(normal, toLight));
-    return cosTheta;
+vec3 sampleCone(vec3 baseDir, float angle, vec2 rand) {
+    float radius = tan(angle);
+    
+    float r = radius * sqrt(rand.x);
+    float phi = 2.0 * PI * rand.y;
+    vec2 diskPoint = r * vec2(cos(phi), sin(phi));
+    
+    vec3 tangent = normalize(cross(baseDir, vec3(0, 1, 1)));
+    vec3 bitangent = cross(baseDir, tangent);
+    
+    return normalize(baseDir + tangent * diskPoint.x + bitangent * diskPoint.y);
 }
 
-vec3 sampleDiffuseDirection(vec3 point, vec3 normal, float add) {
-    vec3 hemisphereDistributedDirection = normalOrientedHemispherePoint(random2D(vec4(point, normal.x) + add), normal);
+vec3 calculateSoftDirectionalShadow(vec3 hitPoint, vec3 hitNormal, vec3 lightDir, float sunAngularRadius, int samples) {
+    float shadow = 0.0;
+    vec3 normal = hitNormal;
+    
+    for (int i = 0; i < samples; i++) {
+        vec2 rand = random2D(vec4(hitPoint, i) * time);
+        vec3 jitteredLightDir = sampleCone(lightDir, sunAngularRadius, rand);
+        
+        if (!intersectScene(hitPoint + normal * 0.001, jitteredLightDir)) {
+            shadow += 1.0;
+        }
+    }
+    
+    shadow = shadow / float(samples);
 
-    vec3 randomVec = normalize(2.0 * random3D(vec4(point, normal.x) + add) - 1.0);
-
-    vec3 tangent = cross(randomVec, normal);
-    vec3 bitangent = cross(normal, tangent);
-    mat3 transform = mat3(tangent, bitangent, normal);
-
-    return transform * hemisphereDistributedDirection;
+    return vec3(shadow);
 }
 
 vec3 tracePath(vec3 rayOrig, vec3 rayDir) {
@@ -152,17 +174,25 @@ vec3 tracePath(vec3 rayOrig, vec3 rayDir) {
         vec3 hitPoint, hitNormal, hitColor;
         bool hit = intersectScene(rayOrig, rayDir, hitPoint, hitNormal, hitColor);
 
-        if (hit) {
-            rayOrig = hitPoint;
-            rayDir = sampleDiffuseDirection(hitPoint, hitNormal, time);
-
-            result += throughput * hitColor;
-            throughput *= hitColor;
-        } else {
-            throughput = vec3(0);
+        if (!hit) {
+            vec3 skyColor = vec3(1);
+            result += throughput * skyColor;
+            break;
         }
+
+
+        if (i > 3) {
+            float p = max(max(throughput.x, throughput.y), throughput.z);
+            if (random(rayDir.xz) > p) break;
+            throughput /= p;
+        }
+
+        rayOrig = hitPoint + hitNormal * 0.0001;
+        rayDir = sampleDiffuseDirection(hitPoint, hitNormal, time);
+
+        throughput *= hitColor;
     }
-    
+
     return result;
 }
 
@@ -180,11 +210,14 @@ void main() {
 
     vec3 totalColor = vec3(0);
     for (int i = 0; i < SAMPLES; i++) {
-        float directLight = computeDirectLighting(fragWorldPos, normalize(fragWorldNormal));
+        float sunAngularRadius = .1;
+        vec3 directLight = calculateSoftDirectionalShadow(rayOrig, fragWorldNormal, -lightDir, sunAngularRadius, 1);
+        directLight = mix(vec3(0.7), vec3(1.0), directLight);
+        
         vec3 newRay = sampleDiffuseDirection(fragWorldPos, fragWorldNormal, i + time);
         vec3 indirectLight = tracePath(fragWorldPos + normalize(fragWorldNormal) * 0.001, newRay);
-        vec3 color = clamp(fragColor * (directLight + indirectLight), vec3(0), vec3(1));
-        totalColor += color;
+        
+        totalColor += clamp(fragColor * directLight * indirectLight, vec3(0), vec3(1));
     }
     totalColor /= float(SAMPLES);
     
