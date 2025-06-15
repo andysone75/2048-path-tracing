@@ -4,8 +4,7 @@
 #include <algorithm>
 #include <random>
 
-void Game2048::init(int maxLevel)
-{
+void Game2048::init(int maxLevel) {
     this->maxLevel = maxLevel;
 
     for (int i = 0; i < 4; ++i)

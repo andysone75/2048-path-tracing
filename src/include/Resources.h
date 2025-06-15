@@ -26,7 +26,6 @@ enum class ModelType {
 	Level7,
 	Level8,
 	Level9,
-	Level10
 };
 
 class Resources {

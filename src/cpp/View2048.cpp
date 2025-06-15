@@ -3,8 +3,6 @@
 #include <stdexcept>
 #include <glm/glm.hpp>
 
-int getCubesCount(int level) { return level < 10 ? (level + 1) : 1; }
-
 void View2048::init(Game2048* game, Scene* scene) {
     this->game = game;
     this->scene = scene;
@@ -35,7 +33,7 @@ void View2048::update(float dt) {
         );
 
         const auto& target = animationTargets[i];
-        int cubesCount = getCubesCount(target.level);
+        int cubesCount = target.level + 1;
 
         for (int i = 0; i < cubesCount; i++) {
             scene->getObject(target.cubeIds[i]).position = glm::vec3(pos.x, .2f * i, pos.z);
@@ -101,13 +99,11 @@ void View2048::poolObjects() {
         std::stack<View2048_Cube>& pool = objectsPools[object.cube.level];
         pool.push(object.cube);
 
-        int cubesCount = getCubesCount(object.cube.level);
+        int cubesCount = object.cube.level + 1;
 
         for (int i = 0; i < cubesCount; i++) {
             scene->getObject(object.cube.cubeIds[i]).isActive = false;
         }
-
-        //scene.getObject(object.cube.labelId).isActive = false;
     }
 
     placedObjects.clear();
@@ -115,28 +111,16 @@ void View2048::poolObjects() {
 
 ModelType getCubeModelByLevel(int level) {
     switch (level) {
-    case 0:
-        return ModelType::Level0;
-    case 1:
-        return ModelType::Level1;
-    case 2:
-        return ModelType::Level2;
-    case 3:
-        return ModelType::Level3;
-    case 4:
-        return ModelType::Level4;
-    case 5:
-        return ModelType::Level5;
-    case 6:
-        return ModelType::Level6;
-    case 7:
-        return ModelType::Level7;
-    case 8:
-        return ModelType::Level8;
-    case 9:
-        return ModelType::Level9;
-    case 10:
-        return ModelType::Level10;
+        case 0: return ModelType::Level0;
+        case 1: return ModelType::Level1;
+        case 2: return ModelType::Level2;
+        case 3: return ModelType::Level3;
+        case 4: return ModelType::Level4;
+        case 5: return ModelType::Level5;
+        case 6: return ModelType::Level6;
+        case 7: return ModelType::Level7;
+        case 8: return ModelType::Level8;
+        case 9: return ModelType::Level9;
     }
 
     throw std::runtime_error("Model not found");
@@ -155,26 +139,16 @@ glm::vec4 getCubeColorByLevel(int level) {
     glm::vec4 yellow = glm::vec4{ 255, 238, 124, 255 } / 255.0f;
 
     switch (level) {
-    case 0:
-        return gray;
-    case 1:
-        return lightGreen;
-    case 2:
-        return darkGreen;
-    case 3:
-        return blue;
-    case 4:
-        return darkBlue;
-    case 5:
-        return purple;
-    case 6:
-        return pink;
-    case 7:
-        return red;
-    case 8:
-        return orange;
-    case 9:
-        return yellow;
+        case 0: return gray;
+        case 1: return lightGreen;
+        case 2: return darkGreen;
+        case 3: return blue;
+        case 4: return darkBlue;
+        case 5: return purple;
+        case 6: return pink;
+        case 7: return red;
+        case 8: return orange;
+        case 9: return yellow;
     }
 
     throw std::runtime_error("Model not found");
@@ -195,21 +169,16 @@ View2048_Object View2048::placeObject(int level, int row, int col) {
     }
 
     if (!poolHit) {
-        if (level < 9) {
-            object.cube.cubeIds = new int[level + 1];
+        object.cube.cubeIds = new int[level + 1];
 
-            for (int i = 0; i < level + 1; i++) {
-                object.cube.cubeIds[i] = scene->createObjectOpaque(getCubeModelByLevel(i), getCubeColorByLevel(i));
-            }
-        } else {
-            object.cube.cubeIds = new int[1];
-            object.cube.cubeIds[0] = scene->createObjectOpaque(getCubeModelByLevel(9), getCubeColorByLevel(9));
+        for (int i = 0; i < level + 1; i++) {
+            object.cube.cubeIds[i] = scene->createObjectOpaque(getCubeModelByLevel(i), getCubeColorByLevel(i));
         }
 
         object.cube.level = level;
     }
 
-    int cubesCount = getCubesCount(level);
+    int cubesCount = level + 1;
 
     for (int i = 0; i < cubesCount; i++) {
         SceneObject& sceneObjectCube = scene->getObject(object.cube.cubeIds[i]);

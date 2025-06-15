@@ -55,7 +55,6 @@ void Resources::initialize(VulkanRenderer& vulkan) {
 	Model level7  = loadModel(vulkan.genCube(red),			"level-7",		MATRIX_SCALE(.7, .7 * .2, .7),	MATRIX_TRANSLATE(0, .7 * .2 * .5, 0));
 	Model level8  = loadModel(vulkan.genCube(orange),		"level-8",		MATRIX_SCALE(.7, .7 * .2, .7),	MATRIX_TRANSLATE(0, .7 * .2 * .5, 0));
 	Model level9  = loadModel(vulkan.genCube(yellow),		"level-9",		MATRIX_SCALE(.7, .7 * .2, .7),	MATRIX_TRANSLATE(0, .7 * .2 * .5, 0));
-	Model level10 = loadModel(vulkan.genCube(),				"level-10",		MATRIX_SCALE(.7, .19 * 11, .7), MATRIX_TRANSLATE(0, .19 * 11 * .5, 0));
 
 	models[0] = gridCell;
 	models[1] = level0;
@@ -68,7 +67,6 @@ void Resources::initialize(VulkanRenderer& vulkan) {
 	models[8] = level7;
 	models[9] = level8;
 	models[10] = level9;
-	models[11] = level10;
 }
 
 void Resources::unload() {
